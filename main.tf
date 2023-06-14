@@ -9,3 +9,16 @@ resource "aws_instance" "web" {
       Owner = "Terraform"
     }
 }
+
+resource "aws_security_group" "web-sg" {
+    name = "webSG"
+    
+    ingress {
+    description      = "ssh from Everywhere"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  #  ipv6_cidr_blocks = ["::/0"]
+  }
+}
