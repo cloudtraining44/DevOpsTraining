@@ -7,16 +7,28 @@
  resource "aws_vpc" "main" {                # Creating VPC here
    cidr_block       = var.main_vpc_cidr     # Defining the CIDR block use 10.0.0.0/24 for demo
    instance_tenancy = "default"
+  
+  tags = {
+    Name = "main"
+  }
  }
 
  resource "aws_subnet" "public_subnet" {
   vpc_id     = aws_vpc.main.id
   cidr_block = var.public_subnet
+
+  tags = {
+    Name = "public_subnet"
+  }
 }
 
  resource "aws_subnet" "private_subnet" {
   vpc_id     = aws_vpc.main.id
   cidr_block = var.private_subnet
+
+  tags = {
+    Name = "private_subnet"
+  }
 }
 
 resource "aws_internet_gateway" "gw" {
