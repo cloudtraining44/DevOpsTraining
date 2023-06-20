@@ -1,51 +1,50 @@
  provider "aws" {
   region = "us-east-1"
-#  access_key = var.access_key
-#  secret_key = var.secret_access_key
+  access_key = var.access_key
+  secret_key = var.secret_access_key
 }
 
 data "aws_vpc" "main" {
   filter {
     name   = "tag:Name"
-    values = ["main"]
+    values = ["vpc*"]
   }
 }
 
 data "aws_subnet" "public_subnet" {
   filter {
     name   = "tag:Name"
-    values = ["public_subnet"] # insert value here
+    values = ["public_subnet*"] # insert value here
   }
 }
 
 data "aws_subnet" "private_subnet" {
   filter {
     name   = "tag:Name"
-    values = ["private_subnet"] # insert value here
+    values = ["private_subnet*"] # insert value here
   }
 }
 
-locals {
+/*locals {
   subnet_ids = toset([
     data.aws_subnet.public_subnet.id,
     data.aws_subnet.private_subnet.id,
   ])
-}
+}*/
 
  resource "aws_instance" "demo-instance" {
-  for_each               = local.subnet_ids
+#  for_each               = local.subnet_ids
   ami                    = "ami-0889a44b331db0194"
   instance_type          = "t2.micro"
   key_name               = "demokp"
   vpc_security_group_ids = [aws_security_group.web-sg-01.id]
   user_data              = "${file("userdata_web.sh")}"
-#  subnet_id              = data.aws_subnet.public_subnet.id
-  subnet_id              = each.key
+  subnet_id              = data.aws_subnet.public_subnet.id
+#  subnet_id              = "each_key"
   tags = {
-    Name  = "Server - ${each.key}"
+    Name  = "Server"
     Owner = "Terraform"
   }
-#["${(var.iqr_environment == "dev" ? "admin-role" : "read-role")}"]
 
 }
 
