@@ -9,7 +9,7 @@
    instance_tenancy = "default"
   
   tags = {
-    Name = "main"
+    Name = "vpc-${var.env}"
   }
  }
 
@@ -18,7 +18,7 @@
   cidr_block = var.public_subnet
 
   tags = {
-    Name = "public_subnet"
+    Name = "public_subnet-${var.env}"
   }
 }
 
@@ -27,7 +27,7 @@
   cidr_block = var.private_subnet
 
   tags = {
-    Name = "private_subnet"
+    Name = "private_subnet-${var.env}"
   }
 }
 
