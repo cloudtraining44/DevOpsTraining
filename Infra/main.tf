@@ -3,24 +3,57 @@
 #  access_key = var.access_key
 #  secret_key = var.secret_access_key
 }
- 
+
+data "aws_vpc" "main" {
+  filter {
+    name   = "tag:Name"
+    values = ["main"]
+  }
+}
+
+data "aws_subnet" "public_subnet" {
+  filter {
+    name   = "tag:Name"
+    values = ["public_subnet"] # insert value here
+  }
+}
+
+data "aws_subnet" "private_subnet" {
+  filter {
+    name   = "tag:Name"
+    values = ["private_subnet"] # insert value here
+  }
+}
+
+locals {
+  subnet_ids = toset([
+    data.aws_subnet.public_subnet.id,
+    data.aws_subnet.private_subnet.id,
+  ])
+}
+
  resource "aws_instance" "demo-instance" {
+  for_each               = local.subnet_ids
   ami                    = "ami-0889a44b331db0194"
   instance_type          = "t2.micro"
   key_name               = "demokp"
   vpc_security_group_ids = [aws_security_group.web-sg-01.id]
   user_data              = "${file("userdata_web.sh")}"
+#  subnet_id              = data.aws_subnet.public_subnet.id
+  subnet_id              = each.key
   tags = {
-    Name  = "Web-01"
+    Name  = "Server - ${each.key}"
     Owner = "Terraform"
   }
+#["${(var.iqr_environment == "dev" ? "admin-role" : "read-role")}"]
+
 }
 
 #Security Group Resource to open port 80 
 resource "aws_security_group" "web-sg-01" {
   name        = "Web-SG-01"
   description = "Web-SG-01"
-  vpc_id = ""
+  vpc_id      = data.aws_vpc.main.id
 
   ingress {
     description      = "Port 80 from Everywhere"
@@ -56,8 +89,4 @@ resource "aws_security_group" "web-sg-01" {
     cidr_blocks      = ["0.0.0.0/0"]
   # ipv6_cidr_blocks = ["::/0"]
   }
-}
-
-output "public_ip" {
-  value = aws_instance.demo-instance.public_ip
 }
