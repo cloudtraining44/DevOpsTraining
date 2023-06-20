@@ -1,77 +1,63 @@
  provider "aws" {
   region = "us-east-1"
-  access_key = var.access_key
-  secret_key = var.secret_access_key
+#  access_key = var.access_key
+#  secret_key = var.secret_access_key
 }
  
- resource "aws_vpc" "main" {                # Creating VPC here
-   cidr_block       = var.main_vpc_cidr     # Defining the CIDR block use 10.0.0.0/24 for demo
-   instance_tenancy = "default"
-  
+ resource "aws_instance" "demo-instance" {
+  ami                    = "ami-0889a44b331db0194"
+  instance_type          = "t2.micro"
+  key_name               = "demokp"
+  vpc_security_group_ids = [aws_security_group.web-sg-01.id]
+  user_data              = "${file("userdata_web.sh")}"
   tags = {
-    Name = "main"
-  }
- }
-
- resource "aws_subnet" "public_subnet" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = var.public_subnet
-
-  tags = {
-    Name = "public_subnet"
+    Name  = "Web-01"
+    Owner = "Terraform"
   }
 }
 
- resource "aws_subnet" "private_subnet" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = var.private_subnet
+#Security Group Resource to open port 80 
+resource "aws_security_group" "web-sg-01" {
+  name        = "Web-SG-01"
+  description = "Web-SG-01"
+  vpc_id = ""
 
-  tags = {
-    Name = "private_subnet"
+  ingress {
+    description      = "Port 80 from Everywhere"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  #  ipv6_cidr_blocks = ["::/0"]
+  }
+
+    ingress {
+    description      = "ssh from Everywhere"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  #  ipv6_cidr_blocks = ["::/0"]
+  }
+
+    ingress {
+    description      = "Port 443 from Everywhere"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  #  ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+  # ipv6_cidr_blocks = ["::/0"]
   }
 }
 
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.main.id
-
-  depends_on = [ aws_vpc.main ]
-}
-
-resource "aws_route_table" "public_routetable" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
-  }
-}
-
-resource "aws_route_table_association" "public_association" {
-  subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_routetable.id
-}
-
-resource "aws_eip" "eip" {
-  domain   = "vpc"
-}
-
-resource "aws_nat_gateway" "example" {
-  allocation_id = aws_eip.eip.id
-  subnet_id     = aws_subnet.public_subnet.id
-
-  depends_on = [aws_internet_gateway.gw]
-}
-
-resource "aws_route_table" "private_routetable" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.example.id
-  }
-}
-
-resource "aws_route_table_association" "private_association" {
-  subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_routetable.id
+output "public_ip" {
+  value = aws_instance.demo-instance.public_ip
 }
